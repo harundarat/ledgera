@@ -159,9 +159,17 @@ export function LoginForm() {
         </Form>
       </Card>
 
-      <p className="text-center text-xs text-muted">
-        Secure access to your Ledgera workspace.
-      </p>
+      <div className="space-y-2 text-center">
+        <p className="text-sm text-muted">
+          Don&apos;t have an account?{" "}
+          <Link className="font-medium text-accent" href="/register">
+            Create account
+          </Link>
+        </p>
+        <p className="text-xs text-muted">
+          Secure access to your Ledgera workspace.
+        </p>
+      </div>
     </div>
   );
 }
