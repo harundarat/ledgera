@@ -1,0 +1,96 @@
+@layer base {
+  :root,
+  .light,
+  [data-theme="light"] {
+    color-scheme: light;
+
+    --radius: 0.5rem;
+    --field-radius: 0.75rem;
+    --field-border-width: 0px;
+
+    --background: oklch(0.9702 0 0);
+    --foreground: oklch(0.2103 0.0059 285.89);
+
+    --surface: oklch(1 0 0);
+    --surface-foreground: var(--foreground);
+    --surface-secondary: oklch(0.9524 0.0013 286.37);
+    --surface-secondary-foreground: var(--foreground);
+    --surface-tertiary: oklch(0.9373 0.0013 286.37);
+    --surface-tertiary-foreground: var(--foreground);
+
+    --overlay: oklch(1 0 0);
+    --overlay-foreground: var(--foreground);
+
+    --muted: oklch(0.5517 0.0138 285.94);
+    --default: oklch(0.94 0.001 286.375);
+    --default-foreground: var(--foreground);
+
+    --accent: oklch(0.6485 0.1192 221.3066);
+    --accent-foreground: var(--snow);
+
+    --field-background: oklch(1 0 0);
+    --field-foreground: var(--foreground);
+    --field-placeholder: var(--muted);
+    --field-border: transparent;
+
+    --segment: oklch(1 0 0);
+    --segment-foreground: var(--foreground);
+    --border: oklch(0.9 0.004 286.32);
+    --separator: oklch(0.92 0.004 286.32);
+    --focus: var(--accent);
+    --link: var(--foreground);
+    --backdrop: rgb(0 0 0 / 50%);
+
+    --surface-shadow:
+      0 2px 4px 0 rgb(0 0 0 / 4%),
+      0 1px 2px 0 rgb(0 0 0 / 6%),
+      0 0 1px 0 rgb(0 0 0 / 6%);
+    --overlay-shadow:
+      0 2px 8px 0 rgb(0 0 0 / 6%),
+      0 -6px 12px 0 rgb(0 0 0 / 3%),
+      0 14px 28px 0 rgb(0 0 0 / 8%);
+    --field-shadow:
+      0 2px 4px 0 rgb(0 0 0 / 4%),
+      0 1px 2px 0 rgb(0 0 0 / 6%),
+      0 0 1px 0 rgb(0 0 0 / 6%);
+  }
+
+  .dark,
+  [data-theme="dark"] {
+    color-scheme: dark;
+
+    --background: oklch(0.075 0 0);
+    --foreground: oklch(0.9911 0 0);
+
+    --surface: oklch(0.2103 0.0059 285.89);
+    --surface-foreground: var(--foreground);
+    --surface-secondary: oklch(0.257 0.0037 286.14);
+    --surface-secondary-foreground: var(--foreground);
+    --surface-tertiary: oklch(0.2721 0.0024 247.91);
+    --surface-tertiary-foreground: var(--foreground);
+
+    --overlay: oklch(0.2103 0.0059 285.89);
+    --overlay-foreground: var(--foreground);
+
+    --muted: oklch(0.705 0.015 286.067);
+    --default: oklch(0.274 0.006 286.033);
+    --default-foreground: var(--foreground);
+
+    --field-background: var(--default);
+    --field-foreground: var(--foreground);
+    --field-placeholder: var(--muted);
+    --field-border: transparent;
+
+    --segment: oklch(0.3964 0.01 285.93);
+    --segment-foreground: var(--foreground);
+    --border: oklch(0.28 0.006 286.033);
+    --separator: oklch(0.25 0.006 286.033);
+    --focus: var(--accent);
+    --link: var(--foreground);
+    --backdrop: rgb(0 0 0 / 60%);
+
+    --surface-shadow: 0 0 0 0 transparent inset;
+    --overlay-shadow: 0 0 1px 0 rgb(255 255 255 / 30%) inset;
+    --field-shadow: 0 0 0 0 transparent inset;
+  }
+}
