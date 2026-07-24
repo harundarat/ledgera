@@ -81,6 +81,16 @@ export function DashboardClient() {
   return (
     <DashboardShell
       description="Monitor your balance, cash flow, and latest account activity."
+      mobileDock={
+        <div className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 sm:hidden">
+          <div className="mx-auto max-w-sm rounded-3xl border border-border bg-surface/95 p-2 shadow-overlay backdrop-blur-xl">
+            <TransactionActions
+              layout="dock"
+              onSelect={(type) => setActiveDialog(type)}
+            />
+          </div>
+        </div>
+      }
       title={`Welcome back, ${user.fullName.split(" ")[0]}.`}
     >
       <section
@@ -109,59 +119,42 @@ export function DashboardClient() {
           })}
         </div>
 
-        <div className="grid grid-cols-3 gap-2 sm:flex">
-          <Button
-            size="sm"
-            onPress={() => setActiveDialog("deposit")}
-          >
-            <ArrowDownLeft aria-hidden="true" />
-            Deposit
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onPress={() => setActiveDialog("transfer")}
-          >
-            <ArrowUpRight aria-hidden="true" />
-            Transfer
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onPress={() => setActiveDialog("withdrawal")}
-          >
-            <Landmark aria-hidden="true" />
-            Withdraw
-          </Button>
-        </div>
+        <TransactionActions
+          layout="inline"
+          onSelect={(type) => setActiveDialog(type)}
+        />
       </section>
 
       <section
         aria-label="Account metrics"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid grid-cols-2 gap-3 xl:grid-cols-4"
       >
         <MetricCard
           description="Available now"
           icon={WalletCards}
           label="Available balance"
+          mobileLayout="featured"
           value={formatCurrency(availableBalance)}
         />
         <MetricCard
           description={`Completed deposits · ${periodDescription}`}
           icon={ArrowDownLeft}
           label="Money in"
+          mobileLayout="compact"
           value={formatCurrency(metrics.moneyIn)}
         />
         <MetricCard
           description={`Completed debits · ${periodDescription}`}
           icon={ArrowUpRight}
           label="Money out"
+          mobileLayout="compact"
           value={formatCurrency(metrics.moneyOut)}
         />
         <MetricCard
           description={`${metrics.transactionCount} activities · ${periodDescription}`}
           icon={Clock3}
           label="Pending amount"
+          mobileLayout="horizontal"
           value={formatCurrency(metrics.pendingAmount)}
         />
       </section>
@@ -238,32 +231,119 @@ export function DashboardClient() {
   );
 }
 
+function TransactionActions({
+  layout,
+  onSelect,
+}: Readonly<{
+  layout: "dock" | "inline";
+  onSelect: (type: TransactionType) => void;
+}>) {
+  const isDock = layout === "dock";
+  const dockButtonClassName =
+    "h-14 w-full flex-col gap-0.5 px-1 text-xs";
+  const depositButtonClassName = `${
+    isDock ? dockButtonClassName : ""
+  } [--button-bg:var(--accent-strong)] [--button-bg-hover:var(--accent-strong-hover)] [--button-bg-pressed:var(--accent-strong-hover)]`;
+
+  return (
+    <div
+      aria-label="Transaction actions"
+      className={
+        isDock
+          ? "grid grid-cols-3 gap-1"
+          : "hidden items-center gap-2 sm:flex"
+      }
+      role="group"
+    >
+      <Button
+        className={depositButtonClassName}
+        fullWidth={isDock}
+        size={isDock ? "lg" : "sm"}
+        onPress={() => onSelect("deposit")}
+      >
+        <ArrowDownLeft aria-hidden="true" />
+        <span>Deposit</span>
+      </Button>
+      <Button
+        className={isDock ? dockButtonClassName : undefined}
+        fullWidth={isDock}
+        size={isDock ? "lg" : "sm"}
+        variant="secondary"
+        onPress={() => onSelect("transfer")}
+      >
+        <ArrowUpRight aria-hidden="true" />
+        <span>Transfer</span>
+      </Button>
+      <Button
+        className={isDock ? dockButtonClassName : undefined}
+        fullWidth={isDock}
+        size={isDock ? "lg" : "sm"}
+        variant="secondary"
+        onPress={() => onSelect("withdrawal")}
+      >
+        <Landmark aria-hidden="true" />
+        <span>Withdraw</span>
+      </Button>
+    </div>
+  );
+}
+
 function MetricCard({
   description,
   icon: Icon,
   label,
+  mobileLayout,
   value,
 }: Readonly<{
   description: string;
   icon: LucideIcon;
   label: string;
+  mobileLayout: "compact" | "featured" | "horizontal";
   value: string;
 }>) {
+  const cardLayoutClasses = {
+    compact: "col-span-1",
+    featured: "col-span-2 sm:col-span-1",
+    horizontal: "col-span-2 sm:col-span-1",
+  }[mobileLayout];
+  const contentLayoutClasses =
+    mobileLayout === "horizontal"
+      ? "px-4 py-3.5 pr-14 sm:p-5"
+      : "p-4 sm:p-5";
+  const valueSizeClasses = {
+    compact:
+      "text-[clamp(0.8125rem,4.2vw,1.125rem)] sm:text-2xl",
+    featured: "text-xl sm:text-2xl",
+    horizontal: "text-lg sm:text-2xl",
+  }[mobileLayout];
+  const valueSpacingClasses =
+    mobileLayout === "horizontal" ? "mt-1.5 sm:mt-2" : "mt-2";
+  const iconPositionClasses =
+    mobileLayout === "horizontal"
+      ? "right-4 top-1/2 -translate-y-1/2 sm:right-5 sm:top-5 sm:translate-y-0"
+      : "right-4 top-4 sm:right-5 sm:top-5";
+
   return (
-    <Card className="min-w-0 gap-0 bg-surface p-0">
-      <Card.Header className="flex-row items-start justify-between gap-3 px-5 pt-5 pb-3">
-        <Card.Description className="text-sm text-muted">
+    <Card
+      className={`relative min-w-0 gap-0 overflow-hidden rounded-3xl bg-surface p-0 ${cardLayoutClasses}`}
+    >
+      <Card.Content className={`min-w-0 ${contentLayoutClasses}`}>
+        <p className="truncate pr-9 text-xs text-muted sm:text-sm">
           {label}
-        </Card.Description>
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-soft-foreground">
-          <Icon aria-hidden="true" className="size-4" />
-        </span>
-      </Card.Header>
-      <Card.Content className="px-5 pb-5">
-        <p className="truncate text-xl font-semibold tracking-tight tabular-nums sm:text-2xl">
+        </p>
+        <p
+          className={`truncate font-semibold tracking-tight tabular-nums ${valueSpacingClasses} ${valueSizeClasses}`}
+        >
           {value}
         </p>
-        <p className="mt-2 truncate text-xs text-muted">{description}</p>
+        <p className="mt-1 truncate text-[11px] leading-4 text-muted sm:mt-2 sm:text-xs">
+          {description}
+        </p>
+        <span
+          className={`absolute flex size-7 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-soft-foreground sm:size-8 ${iconPositionClasses}`}
+        >
+          <Icon aria-hidden="true" className="size-3.5 sm:size-4" />
+        </span>
       </Card.Content>
     </Card>
   );

@@ -18,12 +18,14 @@ export function DashboardShell({
   children,
   description,
   headerActions,
+  mobileDock,
   title,
 }: Readonly<{
   children: ReactNode;
   description: string;
   title: string;
   headerActions?: ReactNode;
+  mobileDock?: ReactNode;
 }>) {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
 
@@ -83,13 +85,21 @@ export function DashboardShell({
           </div>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-5 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div
+          className={`mx-auto flex w-full max-w-[96rem] flex-col gap-5 px-4 pt-5 sm:px-6 sm:py-6 lg:px-8 ${
+            mobileDock
+              ? "pb-[calc(7.5rem+env(safe-area-inset-bottom))]"
+              : "pb-5"
+          }`}
+        >
           {children}
 
           <footer className="pt-2 pb-1 text-center text-xs text-muted">
             Ledgera learning workspace · Transactions are simulated.
           </footer>
         </div>
+
+        {mobileDock}
       </div>
     </main>
   );

@@ -27,6 +27,16 @@
 
     --accent: oklch(0.6485 0.1192 221.3066);
     --accent-foreground: var(--snow);
+    --accent-strong: color-mix(
+      in oklch,
+      var(--accent) 78%,
+      var(--eclipse)
+    );
+    --accent-strong-hover: color-mix(
+      in oklch,
+      var(--accent) 72%,
+      var(--eclipse)
+    );
 
     --field-background: oklch(1 0 0);
     --field-foreground: var(--foreground);
