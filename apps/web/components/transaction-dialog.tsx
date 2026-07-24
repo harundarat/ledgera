@@ -27,6 +27,7 @@ import {
 import { useLedger } from "@/components/ledger-provider";
 import {
   formatCurrency,
+  getTransactionFee,
   transactionLabels,
   type TransactionType,
 } from "@/lib/ledger";
@@ -89,6 +90,7 @@ export function TransactionDialog({
   const requestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const Icon = dialogIcons[type];
   const copy = dialogCopy[type];
+  const transactionFee = getTransactionFee(type);
 
   useEffect(() => {
     return () => {
@@ -147,7 +149,7 @@ export function TransactionDialog({
     if (
       type !== "deposit" &&
       Number.isFinite(parsedAmount) &&
-      parsedAmount > availableBalance
+      parsedAmount + transactionFee > availableBalance
     ) {
       nextErrors.amount = "Your available balance is too low.";
     }
@@ -325,9 +327,12 @@ export function TransactionDialog({
               </TextField>
 
               {type !== "deposit" ? (
-                <p className="text-xs text-muted">
-                  Available: {formatCurrency(availableBalance)}
-                </p>
+                <div className="space-y-1 text-xs text-muted">
+                  <p>Available: {formatCurrency(availableBalance)}</p>
+                  {transactionFee > 0 ? (
+                    <p>Transaction fee: {formatCurrency(transactionFee)}</p>
+                  ) : null}
+                </div>
               ) : null}
             </Modal.Body>
 

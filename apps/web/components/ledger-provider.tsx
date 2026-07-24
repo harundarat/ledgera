@@ -13,8 +13,10 @@ import {
 import {
   DEMO_REFERENCE_DATE,
   INITIAL_LEDGER_STATE,
+  getTransactionFee,
   type LedgerState,
   type LedgerTransaction,
+  type LedgerTransactionDraft,
 } from "@/lib/ledger";
 
 interface DepositInput {
@@ -57,24 +59,24 @@ export function LedgerProvider({
   const transactionSequence = useRef(1);
 
   const buildTransaction = useCallback(
-    (
-      transaction: Omit<
-        LedgerTransaction,
-        "id" | "createdAt" | "status"
-      >,
-    ): LedgerTransaction => {
+    (transaction: LedgerTransactionDraft): LedgerTransaction => {
+      const id = createTransactionId(transactionSequence.current);
+      const createdAt = new Date(
+        new Date(DEMO_REFERENCE_DATE).getTime() +
+          transactionSequence.current * 60_000,
+      );
       const nextTransaction = {
         ...transaction,
-        id: createTransactionId(transactionSequence.current),
+        id,
+        reference: `LDG-${id.slice(4)}`,
+        fee: getTransactionFee(transaction.type),
         status: "completed" as const,
-        createdAt: new Date(
-          new Date(DEMO_REFERENCE_DATE).getTime() +
-            transactionSequence.current * 60_000,
-        ).toISOString(),
+        createdAt: createdAt.toISOString(),
+        completedAt: new Date(createdAt.getTime() + 60_000).toISOString(),
       };
 
       transactionSequence.current += 1;
-      return nextTransaction;
+      return nextTransaction as LedgerTransaction;
     },
     [],
   );
@@ -87,7 +89,11 @@ export function LedgerProvider({
 
       const transaction = buildTransaction({
         amount,
-        detail: "Added to available balance",
+        bankAccount: {
+          accountMask: "•••• 4418",
+          bankName: "BCA",
+        },
+        note: "Demo deposit",
         type: "deposit",
       });
 
@@ -114,7 +120,10 @@ export function LedgerProvider({
 
       const transaction = buildTransaction({
         amount,
-        detail: `To @${recipient}`,
+        counterparty: {
+          displayName: "Ledgera user",
+          username: recipient,
+        },
         type: "transfer",
       });
 
@@ -139,19 +148,25 @@ export function LedgerProvider({
         return { ok: false, error: "Enter an amount greater than zero." };
       }
 
-      if (amount > ledger.availableBalance) {
+      const fee = getTransactionFee("withdrawal");
+
+      if (amount + fee > ledger.availableBalance) {
         return { ok: false, error: "Your available balance is too low." };
       }
 
       const transaction = buildTransaction({
         amount,
-        detail: `${bankName} ••••${accountNumber.slice(-4)}`,
+        bankAccount: {
+          accountMask: `•••• ${accountNumber.slice(-4)}`,
+          bankName,
+        },
         type: "withdrawal",
       });
 
       setLedger((currentLedger) => ({
         ...currentLedger,
-        availableBalance: currentLedger.availableBalance - amount,
+        availableBalance:
+          currentLedger.availableBalance - amount - transaction.fee,
         transactions: [transaction, ...currentLedger.transactions],
       }));
 

@@ -4,14 +4,18 @@ import { Card, Chip, Separator, Table } from "@heroui/react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  ChevronRight,
   Landmark,
   type LucideIcon,
 } from "lucide-react";
+import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import {
   formatCurrency,
   formatTransactionDate,
+  getTransactionDetail,
   transactionLabels,
   type LedgerTransaction,
   type TransactionStatus,
@@ -46,6 +50,8 @@ export function TransactionList({
   title,
   transactions,
 }: Readonly<TransactionListProps>) {
+  const router = useRouter();
+
   return (
     <Card className="gap-0 overflow-hidden bg-surface p-0">
       <Card.Header className="flex-row items-start justify-between gap-4 px-5 pt-5 pb-4 sm:px-6 sm:pt-6">
@@ -67,6 +73,11 @@ export function TransactionList({
               <Table.Content
                 aria-label={title}
                 className="min-w-195"
+                onRowAction={(key) =>
+                  router.push(
+                    `/transactions/${encodeURIComponent(String(key))}`,
+                  )
+                }
               >
                 <Table.Header className="bg-surface">
                   <Table.Column className="bg-surface" isRowHeader>
@@ -90,7 +101,18 @@ export function TransactionList({
                   )}
                 >
                   {(transaction) => (
-                    <Table.Row id={transaction.id}>
+                    <Table.Row
+                      className={({ isHovered, isPressed }) =>
+                        `cursor-pointer transition-colors duration-150 ${
+                          isPressed
+                            ? "bg-accent-soft"
+                            : isHovered
+                              ? "bg-default"
+                              : ""
+                        }`
+                      }
+                      id={transaction.id}
+                    >
                       <Table.Cell className="font-medium tabular-nums">
                         {transaction.id}
                       </Table.Cell>
@@ -127,21 +149,33 @@ export function TransactionList({
                   {index > 0 ? (
                     <Separator className="mx-5 w-auto" />
                   ) : null}
-                  <article className="space-y-4 px-5 py-4">
-                    <TransactionSummary transaction={transaction} />
-                    <div className="flex items-center justify-between gap-3">
-                      <TransactionAmount transaction={transaction} />
-                      <TransactionStatusChip status={transaction.status} />
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
-                      <span className="font-medium tabular-nums">
-                        {transaction.id}
-                      </span>
-                      <time dateTime={transaction.createdAt}>
-                        {formatTransactionDate(transaction.createdAt)}
-                      </time>
-                    </div>
-                  </article>
+                  <NextLink
+                    aria-label={`View ${transactionLabels[transaction.type]} transaction ${transaction.id}`}
+                    className="group block rounded-2xl transition-[background-color,transform] duration-150 hover:bg-default active:scale-[0.995] active:bg-accent-soft focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-focus motion-reduce:transform-none"
+                    href={`/transactions/${encodeURIComponent(transaction.id)}`}
+                  >
+                    <article className="space-y-4 px-5 py-4">
+                      <TransactionSummary transaction={transaction} />
+                      <div className="flex items-center justify-between gap-3">
+                        <TransactionAmount transaction={transaction} />
+                        <TransactionStatusChip status={transaction.status} />
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+                        <span className="font-medium tabular-nums">
+                          {transaction.id}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <time dateTime={transaction.createdAt}>
+                            {formatTransactionDate(transaction.createdAt)}
+                          </time>
+                          <ChevronRight
+                            aria-hidden="true"
+                            className="size-3.5 transition-transform duration-150 group-hover:translate-x-0.5 group-active:translate-x-1 motion-reduce:transform-none"
+                          />
+                        </span>
+                      </div>
+                    </article>
+                  </NextLink>
                 </li>
               ))}
             </ul>
@@ -171,7 +205,7 @@ function TransactionSummary({
           {transactionLabels[transaction.type]}
         </p>
         <p className="max-w-64 truncate text-xs text-muted">
-          {transaction.detail}
+          {getTransactionDetail(transaction)}
         </p>
       </div>
     </div>

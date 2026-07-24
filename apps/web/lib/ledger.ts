@@ -7,14 +7,44 @@ export interface LedgerUser {
   username: string;
 }
 
-export interface LedgerTransaction {
+interface LedgerTransactionBase {
   id: string;
-  type: TransactionType;
+  reference: string;
   amount: number;
+  fee: number;
   status: TransactionStatus;
   createdAt: string;
-  detail: string;
+  completedAt?: string;
+  note?: string;
 }
+
+export interface TransferLedgerTransaction extends LedgerTransactionBase {
+  type: "transfer";
+  counterparty: {
+    displayName: string;
+    username: string;
+  };
+}
+
+export interface BankLedgerTransaction extends LedgerTransactionBase {
+  type: "deposit" | "withdrawal";
+  bankAccount: {
+    bankName: string;
+    accountMask: string;
+  };
+}
+
+export type LedgerTransaction =
+  | TransferLedgerTransaction
+  | BankLedgerTransaction;
+
+export type LedgerTransactionDraft =
+  | (Pick<TransferLedgerTransaction, "amount" | "counterparty" | "note"> & {
+      type: "transfer";
+    })
+  | (Pick<BankLedgerTransaction, "amount" | "bankAccount" | "note"> & {
+      type: "deposit" | "withdrawal";
+    });
 
 export interface LedgerState {
   user: LedgerUser;
@@ -43,14 +73,52 @@ export interface TransactionMixPoint {
 }
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const COMPLETION_DELAY_MS = 4 * 60 * 1000;
 
 export const DEMO_REFERENCE_DATE = "2026-07-23T12:00:00.000Z";
+export const WITHDRAWAL_FEE = 6_500;
 
 export const dashboardPeriodDays: Record<DashboardPeriod, number> = {
   "7d": 7,
   "30d": 30,
   "90d": 90,
 };
+
+type SeedTransaction =
+  | (Omit<
+      TransferLedgerTransaction,
+      "completedAt" | "fee" | "reference"
+    > & {
+      completedAt?: never;
+      fee?: never;
+      reference?: never;
+    })
+  | (Omit<
+      BankLedgerTransaction,
+      "completedAt" | "fee" | "reference"
+    > & {
+      completedAt?: never;
+      fee?: never;
+      reference?: never;
+    });
+
+function createSeedTransaction(
+  transaction: SeedTransaction,
+): LedgerTransaction {
+  const completedAt =
+    transaction.status === "completed"
+      ? new Date(
+          new Date(transaction.createdAt).getTime() + COMPLETION_DELAY_MS,
+        ).toISOString()
+      : undefined;
+
+  return {
+    ...transaction,
+    completedAt,
+    fee: getTransactionFee(transaction.type),
+    reference: `LDG-${transaction.id.slice(4)}`,
+  } as LedgerTransaction;
+}
 
 export const INITIAL_LEDGER_STATE: LedgerState = {
   user: {
@@ -60,198 +128,273 @@ export const INITIAL_LEDGER_STATE: LedgerState = {
   availableBalance: 12_450_000,
   currency: "IDR",
   transactions: [
-    {
+    createSeedTransaction({
       id: "TRX-260723-0842",
       type: "deposit",
       amount: 2_500_000,
       status: "completed",
       createdAt: "2026-07-23T07:42:00.000Z",
-      detail: "Added from BCA account",
-    },
-    {
+      bankAccount: {
+        bankName: "BCA",
+        accountMask: "•••• 4418",
+      },
+      note: "Monthly account top-up",
+    }),
+    createSeedTransaction({
       id: "TRX-260722-1948",
       type: "transfer",
       amount: 475_000,
       status: "completed",
       createdAt: "2026-07-22T12:48:00.000Z",
-      detail: "To @rafi_pratama",
-    },
-    {
+      counterparty: {
+        displayName: "Rafi Pratama",
+        username: "rafi_pratama",
+      },
+      note: "Dinner reimbursement",
+    }),
+    createSeedTransaction({
       id: "TRX-260722-1015",
       type: "withdrawal",
       amount: 1_200_000,
       status: "pending",
       createdAt: "2026-07-22T03:15:00.000Z",
-      detail: "Mandiri ••••0921",
-    },
-    {
+      bankAccount: {
+        bankName: "Mandiri",
+        accountMask: "•••• 0921",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260721-1630",
       type: "transfer",
       amount: 325_000,
       status: "failed",
       createdAt: "2026-07-21T09:30:00.000Z",
-      detail: "To @naya_putri",
-    },
-    {
+      counterparty: {
+        displayName: "Naya Putri",
+        username: "naya_putri",
+      },
+      note: "Shared workspace",
+    }),
+    createSeedTransaction({
       id: "TRX-260720-0912",
       type: "deposit",
       amount: 5_000_000,
       status: "completed",
       createdAt: "2026-07-20T02:12:00.000Z",
-      detail: "Added from BNI account",
-    },
-    {
+      bankAccount: {
+        bankName: "BNI",
+        accountMask: "•••• 1830",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260718-1411",
       type: "withdrawal",
       amount: 750_000,
       status: "completed",
       createdAt: "2026-07-18T07:11:00.000Z",
-      detail: "BCA ••••4418",
-    },
-    {
+      bankAccount: {
+        bankName: "BCA",
+        accountMask: "•••• 4418",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260716-1725",
       type: "transfer",
       amount: 150_000,
       status: "completed",
       createdAt: "2026-07-16T10:25:00.000Z",
-      detail: "To @dimasarya",
-    },
-    {
+      counterparty: {
+        displayName: "Dimas Arya",
+        username: "dimasarya",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260715-0805",
       type: "deposit",
       amount: 1_750_000,
       status: "completed",
       createdAt: "2026-07-15T01:05:00.000Z",
-      detail: "Added from BRI account",
-    },
-    {
+      bankAccount: {
+        bankName: "BRI",
+        accountMask: "•••• 7204",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260713-1340",
       type: "deposit",
       amount: 3_200_000,
       status: "completed",
       createdAt: "2026-07-13T06:40:00.000Z",
-      detail: "Added from Mandiri account",
-    },
-    {
+      bankAccount: {
+        bankName: "Mandiri",
+        accountMask: "•••• 0921",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260711-1820",
       type: "transfer",
       amount: 600_000,
       status: "completed",
       createdAt: "2026-07-11T11:20:00.000Z",
-      detail: "To @sarahalim",
-    },
-    {
+      counterparty: {
+        displayName: "Sarah Alim",
+        username: "sarahalim",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260708-0915",
       type: "withdrawal",
       amount: 900_000,
       status: "completed",
       createdAt: "2026-07-08T02:15:00.000Z",
-      detail: "BNI ••••1830",
-    },
-    {
+      bankAccount: {
+        bankName: "BNI",
+        accountMask: "•••• 1830",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260705-1645",
       type: "deposit",
       amount: 1_400_000,
       status: "completed",
       createdAt: "2026-07-05T09:45:00.000Z",
-      detail: "Added from BCA account",
-    },
-    {
+      bankAccount: {
+        bankName: "BCA",
+        accountMask: "•••• 4418",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260701-1110",
       type: "transfer",
       amount: 275_000,
       status: "completed",
       createdAt: "2026-07-01T04:10:00.000Z",
-      detail: "To @ari_wibowo",
-    },
-    {
+      counterparty: {
+        displayName: "Ari Wibowo",
+        username: "ari_wibowo",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260627-1422",
       type: "withdrawal",
       amount: 500_000,
       status: "pending",
       createdAt: "2026-06-27T07:22:00.000Z",
-      detail: "BRI ••••7204",
-    },
-    {
+      bankAccount: {
+        bankName: "BRI",
+        accountMask: "•••• 7204",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260624-0830",
       type: "deposit",
       amount: 2_000_000,
       status: "completed",
       createdAt: "2026-06-24T01:30:00.000Z",
-      detail: "Added from BNI account",
-    },
-    {
+      bankAccount: {
+        bankName: "BNI",
+        accountMask: "•••• 1830",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260622-1910",
       type: "deposit",
       amount: 900_000,
       status: "completed",
       createdAt: "2026-06-22T12:10:00.000Z",
-      detail: "Added from BCA account",
-    },
-    {
+      bankAccount: {
+        bankName: "BCA",
+        accountMask: "•••• 4418",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260619-1018",
       type: "transfer",
       amount: 800_000,
       status: "failed",
       createdAt: "2026-06-19T03:18:00.000Z",
-      detail: "To @putri_nabila",
-    },
-    {
+      counterparty: {
+        displayName: "Putri Nabila",
+        username: "putri_nabila",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260613-1555",
       type: "deposit",
       amount: 4_250_000,
       status: "completed",
       createdAt: "2026-06-13T08:55:00.000Z",
-      detail: "Added from Mandiri account",
-    },
-    {
+      bankAccount: {
+        bankName: "Mandiri",
+        accountMask: "•••• 0921",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260606-1208",
       type: "withdrawal",
       amount: 1_100_000,
       status: "completed",
       createdAt: "2026-06-06T05:08:00.000Z",
-      detail: "BCA ••••4418",
-    },
-    {
+      bankAccount: {
+        bankName: "BCA",
+        accountMask: "•••• 4418",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260529-1740",
       type: "transfer",
       amount: 425_000,
       status: "completed",
       createdAt: "2026-05-29T10:40:00.000Z",
-      detail: "To @fajar_nugraha",
-    },
-    {
+      counterparty: {
+        displayName: "Fajar Nugraha",
+        username: "fajar_nugraha",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260520-0935",
       type: "deposit",
       amount: 2_750_000,
       status: "completed",
       createdAt: "2026-05-20T02:35:00.000Z",
-      detail: "Added from BRI account",
-    },
-    {
+      bankAccount: {
+        bankName: "BRI",
+        accountMask: "•••• 7204",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260512-1624",
       type: "withdrawal",
       amount: 650_000,
       status: "completed",
       createdAt: "2026-05-12T09:24:00.000Z",
-      detail: "Mandiri ••••0921",
-    },
-    {
+      bankAccount: {
+        bankName: "Mandiri",
+        accountMask: "•••• 0921",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260503-1050",
       type: "transfer",
       amount: 300_000,
       status: "completed",
       createdAt: "2026-05-03T03:50:00.000Z",
-      detail: "To @nadia_s",
-    },
-    {
+      counterparty: {
+        displayName: "Nadia Sari",
+        username: "nadia_s",
+      },
+    }),
+    createSeedTransaction({
       id: "TRX-260425-0812",
       type: "deposit",
       amount: 1_200_000,
       status: "completed",
       createdAt: "2026-04-25T01:12:00.000Z",
-      detail: "Added from BCA account",
-    },
+      bankAccount: {
+        bankName: "BCA",
+        accountMask: "•••• 4418",
+      },
+    }),
   ],
 };
 
@@ -260,6 +403,28 @@ export const transactionLabels: Record<TransactionType, string> = {
   transfer: "Transfer",
   withdrawal: "Withdraw",
 };
+
+export function getTransactionFee(type: TransactionType) {
+  return type === "withdrawal" ? WITHDRAWAL_FEE : 0;
+}
+
+export function getTransactionTotal(transaction: LedgerTransaction) {
+  return transaction.type === "deposit"
+    ? transaction.amount
+    : transaction.amount + transaction.fee;
+}
+
+export function getTransactionDetail(transaction: LedgerTransaction) {
+  if (transaction.type === "transfer") {
+    return `To @${transaction.counterparty.username}`;
+  }
+
+  if (transaction.type === "deposit") {
+    return `Added from ${transaction.bankAccount.bankName} account`;
+  }
+
+  return `${transaction.bankAccount.bankName} ${transaction.bankAccount.accountMask}`;
+}
 
 export function formatCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
@@ -327,7 +492,7 @@ export function calculateDashboardMetrics(
   return transactions.reduce<DashboardMetrics>(
     (metrics, transaction) => {
       if (transaction.status === "pending") {
-        metrics.pendingAmount += transaction.amount;
+        metrics.pendingAmount += getTransactionTotal(transaction);
       }
 
       if (transaction.status !== "completed") {
@@ -337,7 +502,7 @@ export function calculateDashboardMetrics(
       if (transaction.type === "deposit") {
         metrics.moneyIn += transaction.amount;
       } else {
-        metrics.moneyOut += transaction.amount;
+        metrics.moneyOut += getTransactionTotal(transaction);
       }
 
       return metrics;
@@ -390,7 +555,7 @@ export function createCashFlowData(
         if (transaction.type === "deposit") {
           point.inflow += transaction.amount;
         } else {
-          point.outflow += transaction.amount;
+          point.outflow += getTransactionTotal(transaction);
         }
 
         return point;
